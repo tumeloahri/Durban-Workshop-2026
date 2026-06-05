@@ -50,3 +50,5 @@ pid_48,yogurt,11,Depoprovera,31,"grade 10-12, not matriculated",female
 pid_49,yogurt,1,Depoprovera,31,"grade 10-12, matriculated",female
 pid_50,yogurt,48,no hormonal birth control,25,post-secondary,female
 pid_51,yogurt,2,no hormonal birth control,36,less than grade 9,female
+
+ table_01 <- /workspaces/Durban-Workshop-2026/data/group_a_yogurt/01_participant_metadata_yogurt.csv

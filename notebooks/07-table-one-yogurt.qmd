@@ -1,0 +1,96 @@
+                                                                    ---
+title: "Module 7 — Yogurt Study Demographics (Table 1)"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(gtsummary)
+
+# Participant metadata — one row per person
+table_01 <- read_csv(
+  here("data/group_a_yogurt/01_participant_metadata_yogurt.csv"),
+  col_types = cols(sex = col_character())
+)
+```
+
+## Preview the data
+
+```{r}
+table_01
+```
+
+Columns: `pid` (participant ID), `arm` (yogurt / unchanged_diet),
+`days_since_last_sex`, `birth_control`, `age`, `education`, `sex`.
+
+There are **51 participants** split between the two study arms.
+
+---
+
+## Basic Table 1 — by study arm
+
+```{r}
+# step 1: default tbl_summary grouped by arm
+table_01 |>
+  select(-pid) |>
+  tbl_summary(by = arm)
+```
+
+```{r}
+# step 2: add p-values
+table_01 |>
+  select(-pid) |>
+  tbl_summary(by = arm) |>
+  add_p()
+```
+
+```{r}
+# step 3: polished — overall column + bold labels + nicer header
+table_01 |>
+  select(-pid) |>
+  tbl_summary(by = arm) |>
+  add_p() |>
+  add_overall() |>
+  bold_labels() |>
+  modify_header(label ~ "**Characteristic**")
+```
+
+---
+
+## Part 1 — Predict (no code)
+
+For each column below, predict in plain words:
+
+**1. `arm`**
+- How will `tbl_summary(by = arm)` summarise it?
+- What test will `add_p()` pick?
+
+**2. `days_since_last_sex`**
+- *Your answer (summary, test):*
+
+**3. `birth_control`**
+- *Your answer (summary, test):*
+
+**4. `age`**
+- *Your answer (summary, test):*
+
+**5. `education`**
+- *Your answer (summary, test):*
+
+**6. `sex`**
+- *Your answer (summary, test):*
+
+---
+
+## Part 2 — Explorations (optional)
+
+Try changing `by = arm` to `by = birth_control` and see what question the table answers.
+
+```{r}
+# reach: table grouped by birth_control instead of arm
+```

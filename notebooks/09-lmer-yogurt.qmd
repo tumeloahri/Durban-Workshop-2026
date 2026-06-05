@@ -1,0 +1,164 @@
+---
+title: "Module 9 — Mixed Model (lmer) + Regression Table (Yogurt Study)"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+> **Your mode for this exercise.** Group A: **agentic** — describe each step to Pi
+> and let it write the code. Group B: **manual** — write each step yourself.
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(lme4)       # for lmer() — linear mixed-effects models
+library(gtsummary)  # for tbl_regression()
+library(broom.mixed) # helps gtsummary understand lmer models
+```
+
+The yogurt study has **two time points per participant** (baseline and after
+antibiotic), so each person contributes 2 rows of data. We use a **mixed
+model** (`lmer`) to handle this — `(1 | pid)` means "each person gets their
+own random intercept."
+
+```{r}
+# Load and join the data
+samples <- read_csv(here("data/group_a_yogurt/00_sample_ids_yogurt.csv"))
+qpcr    <- read_csv(here("data/group_a_yogurt/02_qpcr_results_yogurt.csv"))
+meta <- read_csv(
+  here("data/group_a_yogurt/01_participant_metadata_yogurt.csv"),
+  col_types = cols(sex = col_character())
+)
+
+# Join qPCR results → sample mapping → participant metadata
+df <- samples |>
+  left_join(qpcr, by = "sample_id") |>
+  left_join(meta, by = c("pid", "arm")) |>
+  mutate(
+    # Make factors so R knows the reference groups
+    time_point = factor(time_point, levels = c("baseline", "after_antibiotic")),
+    arm        = factor(arm,        levels = c("unchanged_diet", "yogurt")),
+    # Log-transform the bacterial counts (they're huge numbers)
+    log_bacteria = log(qpcr_bacteria)
+  )
+```
+
+---
+
+## Preview the data
+
+```{r}
+df |>
+  select(pid, time_point, arm, qpcr_bacteria, log_bacteria) |>
+  head(10)
+```
+
+We have 51 participants × 2 time points = 102 rows.
+
+---
+
+## Part 1 — Predict (no code)
+
+Before running the model, answer in plain words:
+
+1. The model formula is `log_bacteria ~ time_point * arm + (1 | pid)`.
+   What does `(1 | pid)` mean? *Your answer:*
+
+2. Which coefficient do you expect to be **largest** (biggest effect)?
+   *Your answer:*
+
+3. The interaction term `time_point * arm` asks: "Does the change from
+   baseline to after-antibiotic differ between the yogurt and unchanged-diet
+   groups?" If yogurt helps protect bacteria during antibiotics, what sign
+   would the interaction coefficient have (positive or negative)?
+   *Your answer:*
+
+---
+
+## Part 2 — Build
+
+Each step adds one piece. Run after each step.
+
+```{r}
+# step 1: fit the mixed model
+m <- lmer(log_bacteria ~ time_point * arm + (1 | pid), data = df)
+```
+
+```{r}
+# step 2: examine the model summary
+summary(m)
+```
+
+Look at the **Fixed effects** table. The key numbers:
+
+| Coefficient | Estimate | Interpretation |
+|---|---|---|
+| (Intercept) | `r round(fixef(m)[1], 2)` | Baseline log(bacteria) in unchanged_diet group |
+| after_antibiotic | `r round(fixef(m)[2], 2)` | Change after antibiotic (unchanged_diet) |
+| yogurt | `r round(fixef(m)[3], 2)` | Difference at baseline (yogurt vs unchanged) |
+| after_antibiotic × yogurt | `r round(fixef(m)[4], 2)` | Extra change in yogurt group |
+
+```{r}
+# step 3: display the model as a publication-ready regression table
+tbl_regression(m)
+```
+
+Notice `tbl_regression()` automatically shows:
+- The **Beta** column (coefficient estimates)
+- **95% confidence intervals** (using profile likelihood)
+
+```{r}
+# step 4: add overall p-values for multi-level terms
+tbl_regression(m) |>
+  add_global_p()
+```
+
+`add_global_p()` tests "is this term significant overall?" — for the
+interaction, it asks "does the time-course differ between arms?"
+
+---
+
+## Part 3 — Explore (optional)
+
+Try changing the response variable to one of the specific bacterial species:
+
+```{r}
+# Instead of total bacteria, model L. crispatus
+df <- df |>
+  mutate(log_crispatus = log(qpcr_crispatus + 1))  # +1 avoids log(0)
+
+m_crispatus <- lmer(log_crispatus ~ time_point * arm + (1 | pid), data = df)
+tbl_regression(m_crispatus) |>
+  add_global_p()
+```
+
+```{r}
+# Or model L. iners
+df <- df |>
+  mutate(log_iners = log(qpcr_iners + 1))
+
+m_iners <- lmer(log_iners ~ time_point * arm + (1 | pid), data = df)
+tbl_regression(m_iners) |>
+  add_global_p()
+```
+
+```{r}
+# Or add age as a covariate
+m_with_age <- lmer(log_bacteria ~ time_point * arm + age + (1 | pid), data = df)
+tbl_regression(m_with_age) |>
+  add_global_p()
+```
+
+---
+
+## What We Learned
+
+- **`lmer()`** from the `lme4` package fits linear mixed-effects models for
+  repeated measures data
+- **`(1 | pid)`** adds a random intercept per participant, accounting for
+  the fact that each person has their own baseline level
+- **`tbl_regression()`** from `gtsummary` turns the model output into a
+  publication-ready table with coefficients and confidence intervals
+- **`add_global_p()`** adds overall p-values for each term in the model

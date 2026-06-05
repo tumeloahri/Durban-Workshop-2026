@@ -1,0 +1,122 @@
+---
+title: "Module 8 — Yogurt Study Boxplots with faceting"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(ggpubr)
+
+# Participant metadata
+table_01 <- read_csv(
+  here("data/group_a_yogurt/01_participant_metadata_yogurt.csv"),
+  col_types = cols(sex = col_character())
+)
+```
+
+## Preview
+
+```{r}
+table_01
+```
+
+---
+
+## Basic boxplot — age by study arm
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "age")
+```
+
+## Add pairwise comparison
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "age") +
+  stat_compare_means()
+```
+
+The default test is Wilcoxon rank-sum test (Mann–Whitney U) for 2 groups.
+
+---
+
+## With points + color
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "age",
+          #add = "jitter",
+          fill="arm", palette = c("#E7B800", "#00AFBB")) +
+  stat_compare_means()
+```
+
+---
+
+## Facet by education
+
+Now let's see the same plot split by education level using `facet_wrap()`.
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "age",
+          add = "jitter",
+          color = "arm", palette = c("#E7B800", "#00AFBB")) +
+  stat_compare_means() +
+  facet_wrap(~ education)
+```
+
+Here `facet_wrap(~ education)` creates one small panel for each education
+level, so you can see whether the age pattern differs across education groups.
+
+---
+
+## Facet by birth control
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "age",
+          add = "jitter",
+          color = "arm", palette = c("#E7B800", "#00AFBB")) +
+  stat_compare_means() +
+  facet_wrap(~ birth_control)
+```
+
+---
+
+## Days since last sex — faceted by education
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "days_since_last_sex",
+          add = "jitter",
+          color = "arm", palette = c("#E7B800", "#00AFBB")) +
+  stat_compare_means() +
+  facet_wrap(~ education)
+```
+
+---
+
+## Two-way faceting: education × birth control
+
+You can also facet by **two variables** with `facet_grid()`:
+
+```{r}
+ggboxplot(table_01, x = "arm", y = "age",
+          add = "jitter",
+          color = "arm", palette = c("#E7B800", "#00AFBB")) +
+  stat_compare_means() +
+  facet_grid(birth_control ~ education)
+```
+
+`facet_grid(birth_control ~ education)` makes a grid where rows are
+birth control types and columns are education levels.
+
+---
+
+## Try it yourself
+
+Try changing `y` to another numeric column, or change the faceting variable!
+
+```{r}
+# experiment here
+```

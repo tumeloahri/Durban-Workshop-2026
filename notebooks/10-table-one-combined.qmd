@@ -1,0 +1,135 @@
+---
+title: "Module 10 — Yogurt Study: Combining Data + Summary Table"
+format: html
+editor: source
+execute:
+  warning: false
+  message: false
+---
+
+> **Your mode for this exercise.** Group A: **agentic** — describe each step to Pi
+> and let it write the code. Group B: **manual** — write each step yourself.
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(gtsummary)
+```
+
+We have two CSV files about the yogurt study:
+
+- **`00_sample_ids_yogurt.csv`** — one row per *sample* (each participant has
+  a baseline sample and an after-antibiotic sample)
+- **`01_participant_metadata_yogurt.csv`** — one row per *participant* (age,
+  education, birth control, etc.)
+
+We'll join them together, then make a summary table grouped by study arm.
+
+---
+
+## Step 1 — Load both files
+
+```{r}
+samples  <- read_csv(here("data/group_a_yogurt/00_sample_ids_yogurt.csv"))
+metadata <- read_csv(
+  here("data/group_a_yogurt/01_participant_metadata_yogurt.csv"),
+  col_types = cols(sex = col_character())
+)
+```
+
+Take a quick look at each:
+
+```{r}
+samples
+```
+
+```{r}
+metadata
+```
+
+---
+
+## Step 2 — Join them
+
+`left_join()` matches rows by the column `pid`. Each sample gets the
+participant's age, education, etc. attached to it.
+
+```{r}
+df <- samples |> 
+  left_join(metadata, by = "pid")
+
+df
+```
+
+Now every row has both the sample info *and* the participant's metadata.
+
+---
+
+## Step 3 — Summary table by study arm
+
+Because we joined the data, we can group the 102 samples by `arm`
+and see whether the two groups look similar across different variables.
+
+```{r}
+# step 1: default tbl_summary grouped by arm
+df |> 
+  select(arm, age, education, birth_control, days_since_last_sex) |> 
+  tbl_summary(by = arm)
+```
+
+```{r}
+# step 2: add p-values
+df |> 
+  select(arm, age, education, birth_control, days_since_last_sex) |> 
+  tbl_summary(by = arm) |> 
+  add_p()
+```
+
+```{r}
+# step 3: polished — overall column + bold labels + nicer header
+df |> 
+  select(arm, age, education, birth_control, days_since_last_sex) |> 
+  tbl_summary(by = arm) |> 
+  add_p() |> 
+  add_overall() |> 
+  bold_labels() |> 
+  modify_header(label ~ "**Characteristic**")
+```
+
+---
+
+## Part 1 — Predict (no code)
+
+Before running the code above, predict in plain words what will happen:
+
+**1. `age`**
+- How will `tbl_summary(by = arm)` summarise it?
+- What test will `add_p()` pick?
+
+**2. `education`**
+- How will `tbl_summary(by = arm)` summarise it?
+- What test will `add_p()` pick?
+
+**3. `birth_control`**
+- Same two questions:
+
+**4. `days_since_last_sex`**
+- Same two questions:
+
+---
+
+## Part 2 — Explorations (optional)
+
+Try changing `by = arm` to `by = time_point` and see what changes.
+
+```{r}
+# reach: table grouped by time_point (baseline vs after_antibiotic)
+```
+
+Or try grouping by `birth_control` instead:
+
+```{r}
+# reach: table grouped by birth_control method
+```
+
+What question does each version of the table answer?
